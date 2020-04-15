@@ -1,25 +1,29 @@
-# -*- coding: utf-8 -*
-__author__ = 'mizhgun@gmail.com'
+"""Proxymesh downloader middleware for Scrapy"""
+__author__ = 'mizhgun@gmail.com, junta.kristobal@gmail.com'
 # Py3k conversion by: junta.kristobal@gmail.com
-from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import arg_to_iter
-import itertools
+
 import base64
-from six.moves.urllib.request import getproxies, proxy_bypass
-from six.moves.urllib.parse import unquote
+import itertools
 
 try:
     from urllib2 import _parse_proxy
 except ImportError:
     from urllib.request import _parse_proxy
-from six.moves.urllib.parse import urlunparse
 
-from scrapy.utils.httpobj import urlparse_cached
+from scrapy import Request, Spider
 from scrapy.exceptions import NotConfigured
+from scrapy.settings import Settings
+from scrapy.utils.misc import arg_to_iter
+from six.moves.urllib.parse import unquote, urlunparse
 
 
-class SimpleProxymeshMiddleware(object):
-    def __init__(self, settings):
+class SimpleProxymeshMiddleware:
+    """Proxymesh downloader middleware for Scrapy"""
+
+    def __init__(self, settings: Settings):
+        """
+        :param scrapy.settings.Settings settings:
+        """
         if not settings.getbool('PROXYMESH_ENABLED', True):
             raise NotConfigured
         self.proxies = itertools.cycle(arg_to_iter(settings.get('PROXYMESH_URL', 'http://us-il.proxymesh.com:31280')))
@@ -30,7 +34,14 @@ class SimpleProxymeshMiddleware(object):
         o = cls(crawler.settings)
         return o
 
-    def _get_proxy(self, url):
+    @staticmethod
+    def _get_proxy(url: str) -> (str, str):
+        """
+        Transform proxy url into a tuple of credentials and proxy url without credentials
+
+        :param str url:
+        :return str, str: credentials, proxy url
+        """
         proxy_type, user, password, hostport = _parse_proxy(url)
         proxy_url = urlunparse((proxy_type, hostport, '', '', '', ''))
 
@@ -42,7 +53,14 @@ class SimpleProxymeshMiddleware(object):
 
         return creds, proxy_url
 
-    def process_request(self, request, spider):
+    def process_request(self, request: Request, spider: Spider) -> None:
+        """
+        Add proxy to the request
+
+        :param scrapy.Request request:
+        :param scrapy.Spider spider:
+        :return None:
+        """
         if not request.meta.get('bypass_proxy', False) and request.meta.get('proxy') is None:
             creds, proxy = self._get_proxy(next(self.proxies))
             request.meta['proxy'] = proxy
