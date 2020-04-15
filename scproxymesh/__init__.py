@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*
 __author__ = 'mizhgun@gmail.com'
+# Py3k conversion by: junta.kristobal@gmail.com
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import arg_to_iter
 import itertools
@@ -35,7 +36,7 @@ class SimpleProxymeshMiddleware(object):
 
         if user and password:
             user_pass = '%s:%s' % (unquote(user), unquote(password))
-            creds = base64.b64encode(user_pass).strip()
+            creds = base64.b64encode(user_pass.encode("utf-8")).strip()
         else:
             creds = None
 
@@ -43,7 +44,7 @@ class SimpleProxymeshMiddleware(object):
 
     def process_request(self, request, spider):
         if not request.meta.get('bypass_proxy', False) and request.meta.get('proxy') is None:
-            creds, proxy = self._get_proxy(self.proxies.next())
+            creds, proxy = self._get_proxy(next(self.proxies))
             request.meta['proxy'] = proxy
             if creds:
                 request.headers['Proxy-Authorization'] = b'Basic ' + creds
